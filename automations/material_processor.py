@@ -9,19 +9,33 @@ import web_scraper
 logger = logging.getLogger(__name__)
 
 
-def run() -> int:
+def run(limit: int | None = None, only_manual: bool = False) -> int:
+    """处理待处理素材。
+
+    limit：本次最多处理几条（None = 全部）；only_manual：只处理人工提报的素材。
+    顺序：人工提报优先，其余按提交时间从新到旧——限量时先处理最新的。
+    """
     # 「待处理」或处理状态留空（在表格里手动添加时常忘记选）都视为待处理；至少要有链接或描述
     materials = [
         m for m in lark_client.list_all_records(config.TABLE_IDS["materials"])
         if (m["fields"].get("处理状态") in (None, "", "待处理"))
         and (m["fields"].get("原文链接") or m["fields"].get("素材描述"))
     ]
-    # 人工提报的素材优先处理，演示/急用时不用等 RSS 批量素材
-    materials.sort(key=lambda m: m["fields"].get("来源") != "人工提报")
+    if only_manual:
+        materials = [m for m in materials if (m["fields"].get("来源") or "人工提报") == "人工提报"]
+    materials.sort(key=lambda m: (
+        (m["fields"].get("来源") or "人工提报") != "人工提报",
+        -int(m["fields"].get("提交时间") or 0),
+    ))
 
     if not materials:
         logger.info("No pending materials to process")
         return 0
+
+    total = len(materials)
+    if limit is not None and limit < total:
+        materials = materials[:limit]
+    logger.info("待处理素材共 %d 条，本次处理 %d 条", total, len(materials))
 
     domains_cfg = config.load_domains_config()
     prompt_template = config.load_prompt("material_to_topic.txt")

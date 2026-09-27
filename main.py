@@ -16,7 +16,8 @@ logging.basicConfig(
 logger = logging.getLogger("main")
 
 
-def run_all(skip_rss: bool = False, push: bool = False):
+def run_all(skip_rss: bool = False, push: bool = False,
+            limit: int | None = None, only_manual: bool = False):
     logger.info("=== 开始执行全部自动化任务 ===")
 
     if skip_rss:
@@ -27,7 +28,7 @@ def run_all(skip_rss: bool = False, push: bool = False):
         logger.info("RSS 抓取完成，新增 %d 条素材", rss_count)
 
     logger.info("--- 素材加工 ---")
-    material_count = material_processor.run()
+    material_count = material_processor.run(limit=limit, only_manual=only_manual)
     logger.info("素材加工完成，处理 %d 条", material_count)
 
     logger.info("--- 内容生成 ---")
@@ -62,8 +63,12 @@ def main():
     parser.add_argument("--interval", type=int, default=5, help="轮询间隔（分钟），默认 5")
     parser.add_argument("--skip-rss", action="store_true", help="全流程中跳过 RSS 抓取（只处理素材表已有内容与已采纳选题）")
     parser.add_argument("--push", action="store_true", help="全流程结束后把新选题卡片/结果推送到飞书")
+    parser.add_argument("--limit", type=int, default=None, metavar="N",
+                        help="素材加工每次最多处理 N 条（人工提报优先，其余从新到旧）；默认处理全部")
+    parser.add_argument("--only-manual", action="store_true", help="素材加工只处理人工提报的素材，不碰 RSS 素材")
     args = parser.parse_args()
-    job = lambda: run_all(skip_rss=args.skip_rss, push=args.push)
+    job = lambda: run_all(skip_rss=args.skip_rss, push=args.push,
+                          limit=args.limit, only_manual=args.only_manual)
 
     if args.add:
         n = manual_input.add(args.add, args.note)
@@ -75,7 +80,7 @@ def main():
         return
 
     if args.process_materials:
-        material_processor.run()
+        material_processor.run(limit=args.limit, only_manual=args.only_manual)
         return
 
     if args.generate_content:

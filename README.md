@@ -142,10 +142,13 @@ RSS 源在 [`config/topic_domains.yaml`](config/topic_domains.yaml)。每个源�
 ### ② AI 筛选进选题库
 
 ```bash
-python main.py --process-materials
+python main.py --process-materials                  # 处理全部待处理素材
+python main.py --process-materials --limit 5        # 只处理 5 条
+python main.py --process-materials --only-manual    # 只处理人工提报的素材
 ```
 
-- 人工提报的素材**优先处理**，然后才是 RSS 素材。
+- 人工提报的素材**优先处理**，然后是 RSS 素材（从新到旧）。每条素材调用一次 AI，素材多时建议用 `--limit` 分批处理；没处理到的保持「待处理」，下次继续。
+- `--limit` / `--only-manual` 同样适用于 `--once` 和 `--interval`。
 - 相关的素材 → 【选题库】新增「待筛选」选题（含 AI 摘要、建议角度、优先级、行业标签），素材标记「已转选题」。
 - 不相关的 → 素材标记「已跳过」并写明「跳过原因」。
 - 相关性维度与阈值在 [`config/topic_domains.yaml`](config/topic_domains.yaml) 的 `domains` / `filters` 中配置。
