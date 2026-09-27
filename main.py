@@ -6,7 +6,7 @@ import time
 import schedule
 
 import notifier
-from automations import rss_fetcher, material_processor, content_generator, manual_input
+from automations import rss_fetcher, material_processor, content_generator, manual_input, publisher
 
 logging.basicConfig(
     level=logging.INFO,
@@ -35,6 +35,9 @@ def run_all(skip_rss: bool = False, push: bool = False,
     content_count = content_generator.run()
     logger.info("内容生成完成，生成 %d 条初稿", content_count)
 
+    logger.info("--- 自动发布 ---")
+    publish_count = publisher.run()
+
     if not push:
         logger.info("=== 全部任务执行完毕 ===")
         return
@@ -44,6 +47,8 @@ def run_all(skip_rss: bool = False, push: bool = False,
         pushed = notifier.push_pending_topics()
         if content_count:
             notifier.notify(f"✅ 定时任务新生成 {content_count} 篇初稿，状态「待人工编辑」。")
+        if publish_count:
+            notifier.notify(f"🚀 定时任务自动发布 {publish_count} 条内容到 X，状态「已发布」。")
         logger.info("推送新选题卡片 %d 个", pushed)
     except Exception as e:
         logger.error("飞书推送失败: %s", e)
@@ -60,6 +65,7 @@ def main():
     parser.add_argument("--note", default="", help="配合 --add：给素材附一句说明/想法")
     parser.add_argument("--process-materials", action="store_true", help="仅执行素材加工")
     parser.add_argument("--generate-content", action="store_true", help="仅执行内容生成")
+    parser.add_argument("--publish", action="store_true", help="仅执行自动发布（需 AUTO_PUBLISH=true）")
     parser.add_argument("--interval", type=int, default=5, help="轮询间隔（分钟），默认 5")
     parser.add_argument("--skip-rss", action="store_true", help="全流程中跳过 RSS 抓取（只处理素材表已有内容与已采纳选题）")
     parser.add_argument("--push", action="store_true", help="全流程结束后把新选题卡片/结果推送到飞书")
@@ -85,6 +91,10 @@ def main():
 
     if args.generate_content:
         content_generator.run()
+        return
+
+    if args.publish:
+        publisher.run()
         return
 
     if args.once:

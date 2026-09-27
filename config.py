@@ -61,6 +61,10 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "") or None
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "") or None
 
+# --- 自动发布（预留，默认关闭）---
+# true 时流水线会把【内容库】「已通过」的定稿通过 X API 发布并改为「已发布」（需先实现 automations/publisher.py）
+AUTO_PUBLISH = os.getenv("AUTO_PUBLISH", "false").strip().lower() == "true"
+
 # --- Topic domains config ---
 _domains_path = BASE_DIR / "config" / "topic_domains.yaml"
 

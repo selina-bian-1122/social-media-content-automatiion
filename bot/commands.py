@@ -174,6 +174,7 @@ def _status_summary() -> str:
             f"· 已采纳选题：{_count('topics', '状态', '已采纳')}",
             f"· 初稿待人工编辑：{_count('content', '状态', '待人工编辑')}",
             f"· 初稿待审核：{_count('content', '状态', '待审核')}",
+            f"· 已通过待发布：{_count('content', '状态', '已通过')}",
         ])
     except Exception as e:
         logger.exception("统计待办失败")
