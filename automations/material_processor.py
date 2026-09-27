@@ -50,6 +50,7 @@ def run() -> int:
 
         prompt = prompt_template \
             .replace("{{url}}", url) \
+            .replace("{{article_title}}", article.get("title", "")) \
             .replace("{{article_content}}", article.get("content", "")[:6000]) \
             .replace("{{description}}", description) \
             .replace("{{domains_config}}", domains_text) \
@@ -61,11 +62,18 @@ def run() -> int:
             logger.error("AI call failed for material %s: %s", record_id, e)
             continue
 
+        # 标题优先用网页抓到的原标题（不会编造），抓不到再用 AI 给的；回写进「素材描述」方便在表格里辨认。
+        # 正文太短多半是被登录墙/反爬拦下，此时页面标题常是站点名，不可信
+        scraped_title = article.get("title", "") if len(article.get("content", "")) >= 200 else ""
+        ai_title = result.get("material_title", "") if isinstance(result, dict) else ""
+        title = str(scraped_title or ai_title or "").strip()
+        desc_update = _titled_description(description, title) if url else {}
+
         if not isinstance(result, dict):
             logger.warning("AI returned non-JSON for material %s, skipping", record_id)
             lark_client.update_record(
                 config.TABLE_IDS["materials"], record_id,
-                {"处理状态": "已跳过", "跳过原因": "AI response parse error"},
+                {"处理状态": "已跳过", "跳过原因": "AI response parse error", **desc_update},
             )
             processed += 1
             continue
@@ -75,12 +83,12 @@ def run() -> int:
 
         if relevant and score >= min_score:
             topic_data = result.get("topic", {})
-            _create_topic(record_id, topic_data, url, source)
+            _create_topic(record_id, topic_data, url, source, desc_update)
         else:
             skip_reason = result.get("skip_reason", f"Relevance score {score:.2f} below threshold")
             lark_client.update_record(
                 config.TABLE_IDS["materials"], record_id,
-                {"处理状态": "已跳过", "跳过原因": skip_reason},
+                {"处理状态": "已跳过", "跳过原因": skip_reason, **desc_update},
             )
 
         processed += 1
@@ -89,7 +97,8 @@ def run() -> int:
     return processed
 
 
-def _create_topic(material_record_id: str, topic_data: dict, url: str, source: str) -> None:
+def _create_topic(material_record_id: str, topic_data: dict, url: str, source: str,
+                  desc_update: dict) -> None:
     source_type_map = {
         "人工提报": "员工提报",
         "RSS抓取": "RSS",
@@ -121,11 +130,25 @@ def _create_topic(material_record_id: str, topic_data: dict, url: str, source: s
             {
                 "处理状态": "已转选题",
                 "转入选题": [topic_record_id],
+                **desc_update,
             },
         )
         logger.info("Topic created: %s", fields["标题"])
     except Exception as e:
         logger.error("Failed to create topic: %s", e)
+
+
+# 人工提报时没写备注会自动填这些占位文字，它们不携带信息，有标题时直接替换掉
+_PLACEHOLDER_DESCRIPTIONS = {"", "人工提报", "飞书 bot 提报"}
+
+
+def _titled_description(description: str, title: str) -> dict:
+    """返回需要回写的 {"素材描述": ...}；没有标题或描述里已含标题（如 RSS 素材）时返回空 dict。"""
+    if not title or title in description:
+        return {}
+    if description.strip() in _PLACEHOLDER_DESCRIPTIONS:
+        return {"素材描述": title}
+    return {"素材描述": f"{title}\n{description}"}
 
 
 def _plain(value) -> str:
