@@ -1,0 +1,19 @@
+# 密钥与本地配置（绝不提交；参考 .env.example）
+.env
+.env.*
+!.env.example
+
+# 运行时本地状态（bot 审批编号、消息游标等）
+state/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

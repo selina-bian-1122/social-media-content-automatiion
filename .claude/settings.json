@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__lark-mcp__bitable_v1_appTable_list",
+      "mcp__lark-mcp__bitable_v1_appTableField_list",
+      "mcp__lark-mcp__bitable_v1_appTableRecord_search",
+      "mcp__lark-mcp__docx_v1_document_rawContent",
+      "mcp__lark-mcp__docx_builtin_search",
+      "mcp__lark-mcp__wiki_v1_node_search",
+      "mcp__lark-mcp__wiki_v2_space_getNode",
+      "mcp__lark-mcp__im_v1_chat_list",
+      "mcp__lark-mcp__im_v1_chatMembers_get",
+      "mcp__lark-mcp__im_v1_message_list",
+      "mcp__lark-mcp__contact_v3_user_batchGetId"
+    ]
+  }
+}

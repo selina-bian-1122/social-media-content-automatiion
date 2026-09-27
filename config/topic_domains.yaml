@@ -1,0 +1,59 @@
+domains:
+  - name: "AI Infrastructure"
+    keywords_en: ["AI infrastructure", "GPU cluster", "training compute", "inference optimization", "cloud AI"]
+    keywords_zh: ["AI基础设施", "GPU集群", "训练算力", "推理优化"]
+    description: "AI training and inference infrastructure"
+
+  - name: "Data Annotation"
+    keywords_en: ["data annotation", "data labeling", "RLHF", "human feedback", "training data", "data quality"]
+    keywords_zh: ["数据标注", "数据标签", "人类反馈", "训练数据"]
+    description: "Data labeling industry, technology, and market trends"
+
+  - name: "Embodied AI"
+    keywords_en: ["embodied AI", "physical AI", "robotics", "humanoid robot", "autonomous driving"]
+    keywords_zh: ["具身智能", "物理AI", "机器人", "人形机器人"]
+    description: "Embodied AI and robotics technology"
+
+  - name: "AI Safety & Governance"
+    keywords_en: ["AI safety", "AI governance", "AI regulation", "responsible AI", "alignment", "AI ethics"]
+    keywords_zh: ["AI安全", "AI治理", "AI监管", "负责任AI", "对齐"]
+    description: "AI safety, governance, and regulatory policy"
+
+  - name: "Enterprise AI"
+    keywords_en: ["enterprise AI", "AI deployment", "AI use case", "AI adoption"]
+    keywords_zh: ["企业AI", "AI落地", "AI应用案例"]
+    description: "AI deployment and applications across industries"
+
+rss_feeds:
+  - name: "TechCrunch AI"
+    url: "https://techcrunch.com/category/artificial-intelligence/feed/"
+    check_interval_hours: 24
+  - name: "The Verge AI"
+    url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+    check_interval_hours: 24
+  - name: "MIT Technology Review AI"
+    url: "https://www.technologyreview.com/topic/artificial-intelligence/feed"
+    check_interval_hours: 24
+  - name: "VentureBeat AI"
+    url: "https://venturebeat.com/category/ai/feed/"
+    check_interval_hours: 24
+  - name: "Ars Technica AI"
+    url: "https://feeds.arstechnica.com/arstechnica/technology-lab"
+    check_interval_hours: 24
+  - name: "OpenAI Blog"
+    url: "https://openai.com/blog/rss.xml"
+    check_interval_hours: 48
+  - name: "Google AI Blog"
+    url: "https://blog.google/technology/ai/rss/"
+    check_interval_hours: 48
+  - name: "Anthropic Research"
+    url: "https://www.anthropic.com/research/rss.xml"
+    check_interval_hours: 48
+
+filters:
+  min_relevance_score: 0.6
+  exclude_patterns:
+    - "sponsored"
+    - "advertisement"
+    - "press release"
+  prefer_discussion: true
