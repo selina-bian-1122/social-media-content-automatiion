@@ -5,9 +5,11 @@ AI 负责"找素材、判相关性、写初稿"，人负责"选题、定稿、�
 
 ```
  ① RSS 自动抓取 ─┐
-                 ├─▶【素材收集】──② AI 判断相关性──▶【选题库】──③ 人工采纳 + 选账号──▶ ④ AI 写初稿 ──▶【内容库】──⑤ 人工定稿 / 审核 / 发布
- ①½ 人工提报 ────┘      (待处理)                     (待筛选)       (已采纳)                          (待人工编辑)
+                 ├─▶【素材收集】──② AI 判断相关性──▶【选题库】──③ 人工采纳 + 选账号──▶ ④ AI 写初稿 ──▶【内容库】──⑤ 人工定稿 / 审核 ──▶ ⑥ 发布
+ ①½ 人工提报 ────┘      (待处理)                     (待筛选)       (已采纳)                          (待人工编辑)      (已通过)          (已发布)
 ```
+
+⑥ 默认由人工在 X 上发布；自动发布是预留接口，默认关闭（见「自动发布」）。
 
 ---
 
@@ -50,10 +52,11 @@ AI 负责"找素材、判相关性、写初稿"，人负责"选题、定稿、�
 只需要一个人在自己电脑上运行脚本（首次配置见下方「快速开始」）。最省事的方式是让它常驻、每隔一段时间自动跑一轮：
 
 ```bash
-python main.py --interval 1 # interval后面的数字代表就几分钟
+python main.py --interval 1   # interval 后面的数字代表每隔几分钟跑一轮
 ```
 
-它会自动完成：抓 RSS → AI 把素材筛成选题 → 为已采纳的选题写初稿。其他人只需要在表格里按上面的步骤操作。
+它会自动完成：抓 RSS → AI 把素材筛成选题 → 为已采纳的选题写初稿（开启 `AUTO_PUBLISH` 时还会自动发布「已通过」的内容）。其他人只需要在表格里按上面的步骤操作。
+素材很多时可加 `--limit N` 控制每轮最多加工几条素材，例如 `python main.py --interval 1 --limit 3`。
 想手动一步步控制，见下方「端到端工作流」。
 
 ---
@@ -75,11 +78,13 @@ cp .env.example .env
 | 配置项 | 说明 |
 |---|---|
 | `LARK_APP_ID` / `LARK_APP_SECRET` | 飞书开放平台自建应用凭证 |
-| `LARK_BASE_APP_TOKEN` / `LARK_TABLE_*` | 多维表格 app_token 与各表 table_id（浏览器地址栏可见） |
+| `LARK_DOMAIN` | 可选，默认 `https://open.larksuite.com`（Lark 国际版）；飞书国内版填 `https://open.feishu.cn` |
+| `LARK_BASE_APP_TOKEN` / `LARK_TABLE_*` | 多维表格 app_token 与各表 table_id（浏览器地址栏可见）；`LARK_TABLE_PUBLISH` / `LARK_TABLE_REPORT` 为预留，目前代码未使用 |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | AI 密钥，`AI_PROVIDER` 选择使用哪个 |
 | `ANTHROPIC_BASE_URL` / `OPENAI_BASE_URL` | 使用第三方中转服务时填接口地址（OpenAI 格式通常需以 `/v1` 结尾）；留空直连官方 |
 | `AI_MODEL` | 模型名，如 `claude-sonnet-4-6` |
 | `RSS_MAX_PER_FEED` / `RSS_MAX_AGE_DAYS` | 每个 RSS 源只看最新 N 条 / 只收 N 天内文章（默认 5 / 3） |
+| `AUTO_PUBLISH` | 自动发布到 X，默认 `false`；开启前需先实现 `automations/publisher.py`（见「自动发布」） |
 | `LARK_BOT_CHAT_ID`、`BOT_*` | 飞书 bot 相关，可选，见下文「飞书 Bot」 |
 
 > `.env` 以文件内容为准（会覆盖终端里同名的环境变量），且已被 `.gitignore` 排除，**不要提交**。
@@ -200,9 +205,10 @@ python main.py --generate-content
 ### 一键 / 定时运行
 
 ```bash
-python main.py --once                 # ①②④ 各跑一次
-python main.py --interval 1           # 每 1 分钟自动跑 ①②④（Ctrl+C 退出）；人只需在表格里做 ③⑤
+python main.py --once                   # ①②④⑥ 各跑一次（⑥ 仅在 AUTO_PUBLISH=true 时生效）
+python main.py --interval 1             # 每 1 分钟自动跑一轮（Ctrl+C 退出）；人只需在表格里做 ③⑤
 python main.py --interval 1 --skip-rss  # 同上但不抓 RSS
+python main.py --interval 1 --limit 3   # 每轮最多加工 3 条素材（也可加 --only-manual）
 ```
 
 加 `--push` 会在每轮结束后把新选题卡片 / 结果推送到飞书（`LARK_BOT_CHAT_ID`）。
@@ -219,7 +225,7 @@ python ops.py topics              # 列出待筛选选题与可用账号
 python ops.py adopt T86 A1 A2     # 采纳选题 86，用账号 1、2 生成初稿（或 adopt T86 all）
 python ops.py reject T79          # 淘汰选题 79
 python ops.py add <URL> --note "说明"
-python ops.py fetch | process | generate | run
+python ops.py fetch | process | generate | run   # run = ①②④，不含自动发布
 ```
 
 **T / A 编号 = 选题库 / 账号矩阵里「编号」列的数字**（自动编号，永久不变，与视图排序无关）。
@@ -237,10 +243,10 @@ python bot_listener.py
 | 指令 | 作用 |
 |---|---|
 | 发链接（可附说明） | 写入素材表，并发起「立即加工」审批 |
-| `待办` | 各环节待处理数量 |
+| `待办` | 各环节待处理数量（含「已通过待发布」） |
 | `选题` | 推送待筛选选题卡片 |
 | `采纳 T86 A1 A2` / `采纳 T86 全部` / `淘汰 T79` | 采纳（并生成初稿）/ 淘汰选题 |
-| `跑一遍` / `抓取` / `加工` / `生成` | 发起审批（编号 R#） |
+| `跑一遍` / `抓取` / `加工` / `生成` | 发起审批（编号 R#）；`跑一遍` = ①②④，不含自动发布，且素材加工不限量 |
 | `批准 R2` / `取消 R2` | 处理审批 |
 | `帮助` | 查看说明 |
 
